@@ -17,12 +17,13 @@ type Manager struct {
 	sync.Mutex
 	// enable lock on publish event.
 	EnableLock bool
-	name       string
-	// is a sample for new BasicEvent
+	// name of the manager
+	name string
+	// it's a sample for new BasicEvent
 	sample *BasicEvent
 	// storage user custom IEvent instance. you can pre-define some IEvent instances.
 	events map[string]IEvent
-	// storage all event name and ListenerQueue map
+	// key is the event name, value is the queue of listener func
 	listeners map[string]*ListenerQueue
 	// storage all event names by listened
 	listenedNames map[string]int
@@ -30,18 +31,17 @@ type Manager struct {
 
 // NewManager create event manager
 func NewManager(name string) *Manager {
-	em := &Manager{
+	return &Manager{
 		name:          name,
 		sample:        &BasicEvent{},
 		events:        make(map[string]IEvent),
 		listeners:     make(map[string]*ListenerQueue),
 		listenedNames: make(map[string]int),
 	}
-
-	return em
 }
 
 // Listen register an event handler/listener with priority.
+// if not, default level is NORMAL
 func (em *Manager) Listen(name string, listener IListener, priority ...int) {
 	pv := Normal
 	if len(priority) > 0 {
@@ -53,8 +53,8 @@ func (em *Manager) Listen(name string, listener IListener, priority ...int) {
 
 // Subscribe add events by ISubscriber interface.
 // you can register multi event listeners in a struct func.
-func (em *Manager) Subscribe(sbr ISubscriber) {
-	for name, listener := range sbr.SubscribedEvents() {
+func (em *Manager) Subscribe(s ISubscriber) {
+	for name, listener := range s.SubscribedEvents() {
 		switch lt := listener.(type) {
 		case IListener:
 			em.Listen(name, lt)

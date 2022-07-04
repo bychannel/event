@@ -58,66 +58,66 @@ func TestEvent(t *testing.T) {
 }
 
 func TestAddEvent(t *testing.T) {
-	defer event.DefEventManager.Reset()
-	event.DefEventManager.RemoveEvents()
+	defer event.DefaultManager.Reset()
+	event.DefaultManager.RemoveEvents()
 
 	// no name
 	assert.Panics(t, func() {
-		event.DefEventManager.AddEvent(&event.BasicEvent{})
+		event.DefaultManager.AddEvent(&event.BasicEvent{})
 	})
 
-	_, ok := event.DefEventManager.GetEvent("evt1")
+	_, ok := event.DefaultManager.GetEvent("evt1")
 	assert.False(t, ok)
 
 	// AddEvent
 	e := event.NewBasicEvent("evt1", event.M{"k1": "inhere"})
-	event.DefEventManager.AddEvent(e)
+	event.DefaultManager.AddEvent(e)
 	// add by AttachTo
-	event.DefEventManager.AddEvent(event.NewBasicEvent("evt2", nil))
+	event.DefaultManager.AddEvent(event.NewBasicEvent("evt2", nil))
 
 	assert.False(t, e.IsAborted())
-	assert.True(t, event.DefEventManager.HasEvent("evt1"))
-	assert.True(t, event.DefEventManager.HasEvent("evt2"))
-	assert.False(t, event.DefEventManager.HasEvent("not-exist"))
+	assert.True(t, event.DefaultManager.HasEvent("evt1"))
+	assert.True(t, event.DefaultManager.HasEvent("evt2"))
+	assert.False(t, event.DefaultManager.HasEvent("not-exist"))
 
 	// GetEvent
-	r1, ok := event.DefEventManager.GetEvent("evt1")
+	r1, ok := event.DefaultManager.GetEvent("evt1")
 	assert.True(t, ok)
 	assert.Equal(t, e, r1)
 
 	// RemoveEvent
-	event.DefEventManager.RemoveEvent("evt2")
-	assert.False(t, event.DefEventManager.HasEvent("evt2"))
+	event.DefaultManager.RemoveEvent("evt2")
+	assert.False(t, event.DefaultManager.HasEvent("evt2"))
 
 	// RemoveEvents
-	event.DefEventManager.RemoveEvents()
-	assert.False(t, event.DefEventManager.HasEvent("evt1"))
+	event.DefaultManager.RemoveEvents()
+	assert.False(t, event.DefaultManager.HasEvent("evt1"))
 }
 
 func TestListen(t *testing.T) {
-	defer event.DefEventManager.Reset()
+	defer event.DefaultManager.Reset()
 
 	assert.Panics(t, func() {
-		event.DefEventManager.Listen("", event.ListenerFunc(emptyListener), 0)
+		event.DefaultManager.Listen("", event.ListenerFunc(emptyListener), 0)
 	})
 	assert.Panics(t, func() {
-		event.DefEventManager.Listen("name", nil, 0)
+		event.DefaultManager.Listen("name", nil, 0)
 	})
 	assert.Panics(t, func() {
-		event.DefEventManager.Listen("++df", event.ListenerFunc(emptyListener), 0)
+		event.DefaultManager.Listen("++df", event.ListenerFunc(emptyListener), 0)
 	})
 
-	event.DefEventManager.Listen("n1", event.ListenerFunc(emptyListener), event.Min)
-	assert.Equal(t, 1, event.DefEventManager.ListenersCount("n1"))
-	assert.Equal(t, 0, event.DefEventManager.ListenersCount("not-exist"))
-	assert.True(t, event.DefEventManager.HasListeners("n1"))
-	assert.False(t, event.DefEventManager.HasListeners("name"))
+	event.DefaultManager.Listen("n1", event.ListenerFunc(emptyListener), event.Min)
+	assert.Equal(t, 1, event.DefaultManager.ListenersCount("n1"))
+	assert.Equal(t, 0, event.DefaultManager.ListenersCount("not-exist"))
+	assert.True(t, event.DefaultManager.HasListeners("n1"))
+	assert.False(t, event.DefaultManager.HasListeners("name"))
 
-	assert.NotEmpty(t, event.DefEventManager.Listeners())
-	assert.NotEmpty(t, event.DefEventManager.ListenersByName("n1"))
+	assert.NotEmpty(t, event.DefaultManager.Listeners())
+	assert.NotEmpty(t, event.DefaultManager.ListenersByName("n1"))
 
-	event.DefEventManager.RemoveListeners("n1")
-	assert.False(t, event.DefEventManager.HasListeners("n1"))
+	event.DefaultManager.RemoveListeners("n1")
+	assert.False(t, event.DefaultManager.HasListeners("n1"))
 }
 
 func TestPublish(t *testing.T) {
@@ -127,52 +127,52 @@ func TestPublish(t *testing.T) {
 		return nil
 	}
 
-	event.DefEventManager.Listen("evt1", event.ListenerFunc(fn), 0)
-	event.DefEventManager.Listen("evt1", event.ListenerFunc(emptyListener), event.High)
-	assert.True(t, event.DefEventManager.HasListeners("evt1"))
+	event.DefaultManager.Listen("evt1", event.ListenerFunc(fn), 0)
+	event.DefaultManager.Listen("evt1", event.ListenerFunc(emptyListener), event.High)
+	assert.True(t, event.DefaultManager.HasListeners("evt1"))
 
-	err, e := event.DefEventManager.Publish("evt1", nil)
+	err, e := event.DefaultManager.Publish("evt1", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, "evt1", e.Name())
 	assert.Equal(t, "event: evt1", buf.String())
 
-	event.DefEventManager.AddEvent(event.NewBasicEvent("evt2", nil))
-	event.DefEventManager.Listen("evt2", event.ListenerFunc(func(e event.IEvent) error {
+	event.DefaultManager.AddEvent(event.NewBasicEvent("evt2", nil))
+	event.DefaultManager.Listen("evt2", event.ListenerFunc(func(e event.IEvent) error {
 		assert.Equal(t, "evt2", e.Name())
 		assert.Equal(t, "v", e.Get("k"))
 		return nil
 	}), event.AboveNormal)
 
-	assert.True(t, event.DefEventManager.HasListeners("evt2"))
-	err, e = event.DefEventManager.Publish("evt2", event.M{"k": "v"})
+	assert.True(t, event.DefaultManager.HasListeners("evt2"))
+	err, e = event.DefaultManager.Publish("evt2", event.M{"k": "v"})
 	assert.NoError(t, err)
 	assert.Equal(t, "evt2", e.Name())
 	assert.Equal(t, map[string]interface{}{"k": "v"}, e.Data())
 
 	// clear all
-	event.DefEventManager.Reset()
-	assert.False(t, event.DefEventManager.HasListeners("evt1"))
-	assert.False(t, event.DefEventManager.HasListeners("evt2"))
+	event.DefaultManager.Reset()
+	assert.False(t, event.DefaultManager.HasListeners("evt1"))
+	assert.False(t, event.DefaultManager.HasListeners("evt2"))
 
-	err, e = event.DefEventManager.Publish("not-exist", nil)
+	err, e = event.DefaultManager.Publish("not-exist", nil)
 	assert.NoError(t, err)
 	assert.Nil(t, e)
 }
 
 func TestMustPublish(t *testing.T) {
-	defer event.DefEventManager.Reset()
+	defer event.DefaultManager.Reset()
 
-	event.DefEventManager.Listen("n1", event.ListenerFunc(func(e event.IEvent) error {
+	event.DefaultManager.Listen("n1", event.ListenerFunc(func(e event.IEvent) error {
 		return fmt.Errorf("an error")
 	}), event.Max)
-	event.DefEventManager.Listen("n2", event.ListenerFunc(emptyListener), event.Min)
+	event.DefaultManager.Listen("n2", event.ListenerFunc(emptyListener), event.Min)
 
 	assert.Panics(t, func() {
-		_ = event.DefEventManager.MustPublish("n1", nil)
+		_ = event.DefaultManager.MustPublish("n1", nil)
 	})
 
 	assert.NotPanics(t, func() {
-		_ = event.DefEventManager.MustPublish("n2", nil)
+		_ = event.DefaultManager.MustPublish("n2", nil)
 	})
 }
 

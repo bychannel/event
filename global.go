@@ -20,5 +20,5 @@ var eventNameReg = regexp.MustCompile(`^[a-zA-Z][\w-.*]*$`)
 // M is short name for map[string]interface{}
 type M = map[string]interface{}
 
-// DefEventManager default event manager
-var DefEventManager = NewManager("default")
+// DefaultManager default event manager
+var DefaultManager = NewManager("default")
